@@ -15,7 +15,7 @@ const Dashboard = () => {
       ) : selectedTab == 1 ? (
         <Transactions />
       ) : selectedTab == 2 ? (
-        <Add />
+        <Add /> 
       ) : selectedTab == 3 ? (
         <Orders />
       ) : (

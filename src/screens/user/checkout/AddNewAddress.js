@@ -4,38 +4,60 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import React, {useState} from 'react';
 import firestore from '@react-native-firebase/firestore';
 import uuid from 'react-native-uuid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const AddNewAddress = ({navigation}) => {
   const [street, setStreet] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
   const [mobile, setMobile] = useState('');
 
-  const saveAddress = async () => {
-    const addressId = uuid.v4();
-    const userId = await AsyncStorage.getItem('USERID');
-    const user = await firestore().collection('users').doc(userId).get();
-    let tempDart = [];
-    tempDart = user._data.address;
-    tempDart.push({street, city, pincode, mobile, addressId});
-    firestore()
-      .collection('users')
-      .doc(userId)
-      .update({
-        address: tempDart,
-      })
-      .then(res => {
-        console.log('successfully added');
-        navigation.goBack();
-      })
-      .catch(error => {
-        console.log(error);
-      });
+  const validateInputs = () => {
+    if (!street.trim() || !city.trim() || !pincode.trim() || !mobile.trim()) {
+      Alert.alert('Validation Error', 'All fields are required.');
+      return false;
+    }
+    if (pincode.length < 5) {
+      Alert.alert('Validation Error', 'Pincode must be at least 5 digits.');
+      return false;
+    }
+    if (mobile.length !== 10 || !/^\d+$/.test(mobile)) {
+      Alert.alert('Validation Error', 'Mobile number must be exactly 10 digits.');
+      return false;
+    }
+    return true;
   };
+
+  const saveAddress = async () => {
+    if (!validateInputs()) {
+      return;
+    }
+
+    try {
+      const addressId = uuid.v4();
+      const userId = await AsyncStorage.getItem('USERID');
+      const userDoc = await firestore().collection('users').doc(userId).get();
+
+      let addressList = userDoc._data?.address || []; // ✅ Safe fallback
+      addressList.push({street, city, pincode, mobile, addressId});
+
+      await firestore().collection('users').doc(userId).update({
+        address: addressList,
+      });
+
+      console.log('Successfully added');
+      navigation.goBack();
+    } catch (error) {
+      console.log('Error saving address:', error);
+      Alert.alert('Error', 'Failed to save address. Please try again.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <TextInput
@@ -46,7 +68,7 @@ const AddNewAddress = ({navigation}) => {
       />
       <TextInput
         style={styles.inputStyle}
-        placeholder={'Enter City '}
+        placeholder={'Enter City'}
         value={city}
         onChangeText={txt => setCity(txt)}
       />
@@ -59,7 +81,7 @@ const AddNewAddress = ({navigation}) => {
       />
       <TextInput
         style={styles.inputStyle}
-        placeholder={'Enter Contact '}
+        placeholder={'Enter Mobile'}
         value={mobile}
         maxLength={10}
         keyboardType="number-pad"
@@ -67,10 +89,7 @@ const AddNewAddress = ({navigation}) => {
       />
       <TouchableOpacity
         style={styles.addNewBtn}
-        onPress={() => {
-          //   navigation.navigate('AddNewAddress');
-          saveAddress();
-        }}>
+        onPress={saveAddress}>
         <Text style={styles.btnText}>Save Address</Text>
       </TouchableOpacity>
     </View>
@@ -78,6 +97,7 @@ const AddNewAddress = ({navigation}) => {
 };
 
 export default AddNewAddress;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

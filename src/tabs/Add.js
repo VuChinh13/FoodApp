@@ -7,135 +7,159 @@ import {
   PermissionsAndroid,
   Image,
   ScrollView,
+  Alert,
+  Platform,
 } from 'react-native';
 import React, {useState} from 'react';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
-import storage from '@react-native-firebase/storage';
+import {launchImageLibrary} from 'react-native-image-picker';
+import ImageResizer from 'react-native-image-resizer';
 import firestore from '@react-native-firebase/firestore';
+import {Picker} from '@react-native-picker/picker';
+
 const Add = () => {
   const [imageData, setImageData] = useState(null);
   const [name, setName] = useState('');
-  const [price, setPrice] = useState(0);
-  const [discountPrice, setDiscountPrice] = useState(0);
+  const [price, setPrice] = useState('');
+  const [discountPrice, setDiscountPrice] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const requestCameraPermission = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'Cool Photo App Camera Permission',
-          message:
-            'Cool Photo App needs access to your camera ' +
-            'so you can take awesome pictures.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('You can use the camera');
-        openGallery();
-      } else {
-        console.log('Camera permission denied');
-      }
-    } catch (err) {
-      console.warn(err);
+  const [category, setCategory] = useState('');
+  const [vendor, setVendor] = useState('');  // thêm state vendor
+
+  // ... các hàm requestCameraPermission, openGallery, uploadImage giữ nguyên
+
+  const uploadImage = async () => {
+    if (category === '') {
+      Alert.alert('Validation', 'Please select a category.');
+      return;
     }
-  };
-  const openGallery = async () => {
-    const result = await launchImageLibrary({mediaType: 'photo'});
-    if (result.didCancel) {
-    } else {
-      console.log(result);
-      setImageData(result);
+
+    if (vendor.trim() === '') {
+      Alert.alert('Validation', 'Please enter vendor.');
+      return;
     }
+
+    if (imageUrl.trim() !== '') {
+      uploadItem(imageUrl.trim());
+      return;
+    }
+
+    if (!imageData || !imageData.uri) {
+      Alert.alert('Notice', 'Please select an image or enter an image URL.');
+      return;
+    }
+
+    // ... phần upload ảnh lên Cloudinary giữ nguyên
   };
 
-  const uplaodImage = async () => {
-    const reference = storage().ref(imageData.assets[0].fileName);
-    const pathToFile = imageData.assets[0].uri;
-    // uploads file
-    await reference.putFile(pathToFile);
-    const url = await storage()
-      .ref(imageData.assets[0].fileName)
-      .getDownloadURL();
-    console.log(url);
-    uploadItem(url);
-  };
-
-  const uploadItem = url => {
+  const uploadItem = (url) => {
     firestore()
       .collection('items')
       .add({
         name: name,
-        price: price,
-        discountPrice: discountPrice,
+        price: parseFloat(price),
+        discountPrice: parseFloat(discountPrice),
         description: description,
-        imageUrl: url + '',
+        imageUrl: url,
+        category: category,
+        rating: 0,
+        vendor: vendor,  // lưu vendor vào firestore
       })
       .then(() => {
-        console.log('User added!');
+        Alert.alert('Success', 'Item added successfully!');
+        resetForm();
+      })
+      .catch(error => {
+        console.error('Firestore Error:', error);
+        Alert.alert('Error', 'Failed to save data.');
       });
+  };
+
+  const resetForm = () => {
+    setName('');
+    setPrice('');
+    setDiscountPrice('');
+    setDescription('');
+    setImageUrl('');
+    setImageData(null);
+    setCategory('');
+    setVendor(''); // reset vendor
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>Add Item</Text>
+          <Text style={styles.headerText}>Add Food Item</Text>
         </View>
 
         {imageData !== null ? (
-          <Image
-            source={{uri: imageData.assets[0].uri}}
-            style={styles.imageStyle}
-          />
+          <Image source={{uri: imageData.uri}} style={styles.imageStyle} />
         ) : null}
+
         <TextInput
-          placeholder="Enter Item Name"
+          placeholder="Food Name"
           style={styles.inputStyle}
           value={name}
-          onChangeText={text => setName(text)}
+          onChangeText={setName}
         />
         <TextInput
-          placeholder="Enter Item Price"
+          placeholder="Price"
           style={styles.inputStyle}
+          keyboardType="numeric"
           value={price}
-          onChangeText={text => setPrice(text)}
+          onChangeText={setPrice}
         />
         <TextInput
-          placeholder="Enter Item Discount Price"
+          placeholder="Discount Price (optional)"
           style={styles.inputStyle}
+          keyboardType="numeric"
           value={discountPrice}
-          onChangeText={text => setDiscountPrice(text)}
+          onChangeText={setDiscountPrice}
         />
         <TextInput
-          placeholder="Enter Item Description"
+          placeholder="Description"
           style={styles.inputStyle}
           value={description}
-          onChangeText={text => setDescription(text)}
+          onChangeText={setDescription}
         />
         <TextInput
-          placeholder="Enter Item Image URL"
+          placeholder="Vendor"
+          style={styles.inputStyle}
+          value={vendor}
+          onChangeText={setVendor}
+        />
+        <TextInput
+          placeholder="Image URL (optional)"
           style={styles.inputStyle}
           value={imageUrl}
-          onChangeText={text => setImageUrl(text)}
+          onChangeText={setImageUrl}
         />
+
+        <View style={[styles.inputStyle, {padding: 0, justifyContent: 'center'}]}>
+          <Picker
+            selectedValue={category}
+            onValueChange={(itemValue) => setCategory(itemValue)}
+            mode="dropdown"
+            style={{width: '100%'}}>
+            <Picker.Item label="Select Category" value="" />
+            <Picker.Item label="Drinks" value="Drinks" />
+            <Picker.Item label="Combos" value="Combos" />
+            <Picker.Item label="Sliders" value="Sliders" />
+            <Picker.Item label="Classic" value="Classic" />
+          </Picker>
+        </View>
+
         <Text style={{alignSelf: 'center', marginTop: 20}}>OR</Text>
+
         <TouchableOpacity
           style={styles.pickBtn}
-          onPress={() => {
-            requestCameraPermission();
-          }}>
-          <Text>Pick Image From Gallery</Text>
+          onPress={() => requestCameraPermission()}>
+          <Text>Select Image from Gallery</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.uploadBtn}
-          onPress={() => {
-            uplaodImage();
-          }}>
-          <Text style={{color: '#Fff'}}>Upload Item</Text>
+
+        <TouchableOpacity style={styles.uploadBtn} onPress={uploadImage}>
+          <Text style={{color: '#fff'}}>Upload Item</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -143,9 +167,11 @@ const Add = () => {
 };
 
 export default Add;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   header: {
     height: 60,
@@ -161,13 +187,15 @@ const styles = StyleSheet.create({
   },
   inputStyle: {
     width: '90%',
+    fontSize: 16,
     height: 50,
     borderRadius: 10,
     borderWidth: 0.5,
+    borderColor: '#ccc',
     paddingLeft: 20,
-    paddingRight: 20,
-    marginTop: 30,
+    marginTop: 20,
     alignSelf: 'center',
+    backgroundColor: '#fff',
   },
   pickBtn: {
     width: '90%',
@@ -178,6 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
+    backgroundColor: '#fff',
   },
   uploadBtn: {
     backgroundColor: '#5246f2',

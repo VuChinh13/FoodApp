@@ -6,13 +6,13 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
-import {useIsFocused} from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
-import {StripeProvider} from '@stripe/stripe-react-native';
+import { StripeProvider } from '@stripe/stripe-react-native';
 let userId = '';
-const Cart = ({navigation}) => {
+const Cart = ({ navigation }) => {
   const isFocused = useIsFocused();
   const [cartList, setCartList] = useState([]);
   useEffect(() => {
@@ -28,30 +28,56 @@ const Cart = ({navigation}) => {
     const user = await firestore().collection('users').doc(userId).get();
     let tempDart = [];
     tempDart = user._data.cart;
-    tempDart.map(itm => {
+    tempDart = tempDart.map(itm => {
       if (itm.id == item.id) {
-        itm.data.qty = itm.data.qty + 1;
+        return {
+          ...itm,
+          data: {
+            ...itm.data,
+            qty: Number(itm.data.qty) + 1,
+          },
+        };
       }
+      return itm;
     });
+    
     firestore().collection('users').doc(userId).update({
       cart: tempDart,
     });
     getCartItems();
   };
+ 
   const removeItem = async item => {
     const user = await firestore().collection('users').doc(userId).get();
-    let tempDart = [];
-    tempDart = user._data.cart;
-    tempDart.map(itm => {
+    let tempDart = [...user._data.cart];
+    tempDart = tempDart.map(itm => {
       if (itm.id == item.id) {
-        itm.data.qty = itm.data.qty - 1;
+        let updatedQty = Number(itm.data.qty) - 1;
+        if (updatedQty <= 0) {
+          // Nếu số lượng <= 0 thì xóa món hàng
+          deleteItem(item);
+          return itm;  // Không cần cập nhật lại qty nếu đã xóa món hàng
+        } else {
+          // Nếu số lượng > 0 thì giảm số lượng
+          return {
+            ...itm,
+            data: {
+              ...itm.data,
+              qty: updatedQty,
+            },
+          };
+        }
       }
+      return itm;
     });
+  
+    // Cập nhật giỏ hàng sau khi đã thay đổi
     firestore().collection('users').doc(userId).update({
       cart: tempDart,
     });
-    getCartItems();
+    getCartItems();  // Tải lại danh sách giỏ hàng
   };
+  
   const deleteItem = async index => {
     const user = await firestore().collection('users').doc(userId).get();
     let tempDart = [];
@@ -62,23 +88,26 @@ const Cart = ({navigation}) => {
     });
     getCartItems();
   };
+
   const getTotal = () => {
     let total = 0;
-    cartList.map(item => {
-      total = total + item.data.qty * item.data.discountPrice;
+    cartList.forEach(item => {
+      const qty = Number(item?.data?.qty || 0);
+      const price = Number(item?.data?.discountPrice || 0);
+      total += qty * price;
     });
-    return total;
+    return total.toFixed(2); // nếu muốn làm tròn
   };
 
   return (
     <View style={styles.container}>
       <FlatList
         data={cartList}
-        renderItem={({item, index}) => {
+        renderItem={({ item, index }) => {
           return (
             <View style={styles.itemView}>
               <Image
-                source={{uri: item.data.imageUrl}}
+                source={{ uri: item.data.imageUrl }}
                 style={styles.itemImage}
               />
               <View style={styles.nameView}>
@@ -112,12 +141,12 @@ const Cart = ({navigation}) => {
                     }
                   }}>
                   <Text
-                    style={{color: '#fff', fontSize: 20, fontWeight: '700'}}>
+                    style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>
                     -
                   </Text>
                 </TouchableOpacity>
-                <Text style={{fontSize: 16, fontWeight: '600'}}>
-                  {item.data.qty}
+                <Text style={{ fontSize: 16, fontWeight: '600' }}>
+                  {Number(item.data.qty) || 0}
                 </Text>
                 <TouchableOpacity
                   style={[
@@ -148,7 +177,7 @@ const Cart = ({navigation}) => {
       />
       {cartList.length > 0 && (
         <View style={styles.checkoutView}>
-          <Text style={{color: '#000', fontWeight: '600'}}>
+          <Text style={{ color: '#000', fontWeight: '600' }}>
             {'Items(' + cartList.length + ')\nTotal: $' + getTotal()}
           </Text>
           <TouchableOpacity
@@ -164,7 +193,7 @@ const Cart = ({navigation}) => {
             onPress={() => {
               navigation.navigate('Checkout');
             }}>
-            <Text style={{color: '#fff'}}>Checkout</Text>
+            <Text style={{ color: '#fff' }}>Checkout</Text>
           </TouchableOpacity>
         </View>
       )}

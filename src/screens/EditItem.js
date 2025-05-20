@@ -7,70 +7,85 @@ import {
   PermissionsAndroid,
   Image,
   ScrollView,
+  Platform,
 } from 'react-native';
 import React, {useState} from 'react';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
 import {useRoute} from '@react-navigation/native';
+
+// Import Picker
+import {Picker} from '@react-native-picker/picker';
+
 const EditItem = ({navigation}) => {
   const route = useRoute();
+
   const [imageData, setImageData] = useState({
     assets: [{uri: route.params.data.imageUrl}],
   });
   const [name, setName] = useState(route.params.data.name);
   const [price, setPrice] = useState(route.params.data.price);
-  const [discountPrice, setDiscountPrice] = useState(
-    route.params.data.discountPrice,
-  );
+  const [discountPrice, setDiscountPrice] = useState(route.params.data.discountPrice);
   const [description, setDescription] = useState(route.params.data.description);
   const [imageUrl, setImageUrl] = useState('');
+
+  // Thêm state vendor
+  const [vendor, setVendor] = useState(route.params.data.vendor || '');
+
+  // Thêm state category, lấy giá trị ban đầu từ data
+  const [category, setCategory] = useState(route.params.data.category || '');
+
   const requestCameraPermission = async () => {
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'Cool Photo App Camera Permission',
-          message:
-            'Cool Photo App needs access to your camera ' +
-            'so you can take awesome pictures.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('You can use the camera');
-        openGallery();
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Cool Photo App Camera Permission',
+            message:
+              'Cool Photo App needs access to your camera ' +
+              'so you can take awesome pictures.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          openGallery();
+        } else {
+          console.log('Camera permission denied');
+        }
       } else {
-        console.log('Camera permission denied');
+        openGallery();
       }
     } catch (err) {
       console.warn(err);
     }
   };
+
   const openGallery = async () => {
     const result = await launchImageLibrary({mediaType: 'photo'});
     if (result.didCancel) {
+      // user cancelled
     } else {
-      console.log(result);
       setImageData(result);
     }
   };
 
-  const uplaodImage = async () => {
+  // Nếu muốn upload ảnh mới lên Firebase Storage (hiện chưa sử dụng)
+  const uploadImage = async () => {
+    if (!imageData.assets[0].fileName) {
+      return;
+    }
     const reference = storage().ref(imageData.assets[0].fileName);
     const pathToFile = imageData.assets[0].uri;
-    // uploads file
     await reference.putFile(pathToFile);
-    const url = await storage()
-      .ref(imageData.assets[0].fileName)
-      .getDownloadURL();
-    console.log(url);
+    const url = await reference.getDownloadURL();
     uploadItem(url);
   };
 
-  const uploadItem = () => {
+  const uploadItem = (uploadedImageUrl) => {
     firestore()
       .collection('items')
       .doc(route.params.id)
@@ -79,11 +94,17 @@ const EditItem = ({navigation}) => {
         price: price,
         discountPrice: discountPrice,
         description: description,
-        imageUrl: route.params.data.imageUrl + '',
+        imageUrl: uploadedImageUrl || route.params.data.imageUrl,
+        category: category,
+        vendor: vendor, // cập nhật vendor
       })
       .then(() => {
-        console.log('User added!');
+        console.log('Item updated!');
         navigation.goBack();
+      })
+      .catch(error => {
+        console.error('Update error:', error);
+        alert('Failed to update item.');
       });
   };
 
@@ -94,56 +115,89 @@ const EditItem = ({navigation}) => {
           <Text style={styles.headerText}>Edit Item</Text>
         </View>
 
-        {imageData !== null ? (
+        {imageData !== null && imageData.assets && imageData.assets.length > 0 ? (
           <Image
             source={{uri: imageData.assets[0].uri}}
             style={styles.imageStyle}
           />
         ) : null}
+
         <TextInput
           placeholder="Enter Item Name"
           style={styles.inputStyle}
           value={name}
-          onChangeText={text => setName(text)}
+          onChangeText={setName}
         />
         <TextInput
           placeholder="Enter Item Price"
           style={styles.inputStyle}
-          value={price}
-          onChangeText={text => setPrice(text)}
+          value={price.toString()}
+          keyboardType="numeric"
+          onChangeText={setPrice}
         />
         <TextInput
           placeholder="Enter Item Discount Price"
           style={styles.inputStyle}
-          value={discountPrice}
-          onChangeText={text => setDiscountPrice(text)}
+          value={discountPrice.toString()}
+          keyboardType="numeric"
+          onChangeText={setDiscountPrice}
         />
         <TextInput
           placeholder="Enter Item Description"
           style={styles.inputStyle}
           value={description}
-          onChangeText={text => setDescription(text)}
+          onChangeText={setDescription}
+        />
+        {/* Thêm TextInput cho Vendor */}
+        <TextInput
+          placeholder="Enter Vendor"
+          style={styles.inputStyle}
+          value={vendor}
+          onChangeText={setVendor}
         />
         <TextInput
           placeholder="Enter Item Image URL"
           style={styles.inputStyle}
           value={imageUrl}
-          onChangeText={text => setImageUrl(text)}
+          onChangeText={setImageUrl}
         />
+
+        {/* Picker chọn category */}
+        <View style={[styles.inputStyle, {padding: 0, justifyContent: 'center'}]}>
+          <Picker
+            selectedValue={category}
+            onValueChange={(itemValue) => setCategory(itemValue)}
+            mode="dropdown"
+            style={{width: '100%'}}
+          >
+            <Picker.Item label="Select Category" value="" />
+            <Picker.Item label="Drinks" value="Drinks" />
+            <Picker.Item label="Combos" value="Combos" />
+            <Picker.Item label="Sliders" value="Sliders" />
+            <Picker.Item label="Classic" value="Classic" />
+          </Picker>
+        </View>
+
         <Text style={{alignSelf: 'center', marginTop: 20}}>OR</Text>
+
         <TouchableOpacity
           style={styles.pickBtn}
-          onPress={() => {
-            requestCameraPermission();
-          }}>
-          <Text>Pick Image From Gallery</Text>
+          onPress={() => requestCameraPermission()}
+        >
+          <Text>Select Image from Gallery</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.uploadBtn}
           onPress={() => {
-            uploadItem();
-          }}>
-          <Text style={{color: '#Fff'}}>Upload Item</Text>
+            // Nếu muốn upload ảnh lên Firebase Storage trước rồi mới update Firestore, gọi uploadImage()
+            // uploadImage();
+
+            // Hiện tại chỉ cập nhật Firestore với imageUrl hiện tại
+            uploadItem(imageUrl ? imageUrl : null);
+          }}
+        >
+          <Text style={{color: '#fff'}}>Upload Item</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -151,6 +205,7 @@ const EditItem = ({navigation}) => {
 };
 
 export default EditItem;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -176,6 +231,8 @@ const styles = StyleSheet.create({
     paddingRight: 20,
     marginTop: 30,
     alignSelf: 'center',
+    backgroundColor: '#fff',
+    fontSize: 16,
   },
   pickBtn: {
     width: '90%',

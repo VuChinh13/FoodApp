@@ -5,30 +5,29 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import firestore from '@react-native-firebase/firestore';
-import {useIsFocused, useNavigation} from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
+
 const Items = () => {
   const isFocused = useIsFocused();
   const navigation = useNavigation();
   const [items, setItems] = useState([]);
+  const [searchText, setSearchText] = useState('');
+
   useEffect(() => {
     getItems();
   }, [isFocused]);
+
   const getItems = () => {
     firestore()
       .collection('items')
       .get()
       .then(querySnapshot => {
-        console.log('Total users: ', querySnapshot.size);
         let tempData = [];
         querySnapshot.forEach(documentSnapshot => {
-          console.log(
-            'User ID: ',
-            documentSnapshot.id,
-            documentSnapshot.data(),
-          );
           tempData.push({
             id: documentSnapshot.id,
             data: documentSnapshot.data(),
@@ -44,24 +43,48 @@ const Items = () => {
       .doc(docId)
       .delete()
       .then(() => {
-        console.log('User deleted!');
         getItems();
       });
   };
+
+  // Lọc items theo searchText, không phân biệt hoa thường
+  const filteredItems = items.filter(item =>
+    item.data.name.toLowerCase().includes(searchText.toLowerCase()),
+  );
+
   return (
     <View style={styles.container}>
+      {/* Thanh tìm kiếm */}
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search food items..."
+        value={searchText}
+        onChangeText={setSearchText}
+        clearButtonMode="while-editing" // iOS có nút clear
+      />
+
       <FlatList
-        data={items}
-        renderItem={({item, index}) => {
+        data={filteredItems}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => {
           return (
             <View style={styles.itemView}>
               <Image
-                source={{uri: item.data.imageUrl}}
+                source={{ uri: item.data.imageUrl }}
                 style={styles.itemImage}
               />
               <View style={styles.nameView}>
                 <Text style={styles.nameText}>{item.data.name}</Text>
-                <Text style={styles.descText}>{item.data.description}</Text>
+
+                {/* Hiển thị rating */}
+                <View style={styles.ratingView}>
+                  <Text style={styles.star}>⭐</Text>
+                  <Text style={styles.ratingText}>
+                    {item.data.rating ?? 0}
+                  </Text>
+                </View>
+
+                <Text style={styles.descText}>{item.data.vendor}</Text>
                 <View style={styles.priceView}>
                   <Text style={styles.priceText}>
                     {'$' + item.data.discountPrice}
@@ -71,8 +94,9 @@ const Items = () => {
                   </Text>
                 </View>
               </View>
-              <View style={{margin: 10}}>
+              <View style={{ margin: 10, paddingRight: 15 }}>
                 <TouchableOpacity
+                  style={{ marginRight: 15 }}  // Thêm khoảng cách bên phải cho nút sửa
                   onPress={() => {
                     navigation.navigate('EditItem', {
                       data: item.data,
@@ -90,10 +114,11 @@ const Items = () => {
                   }}>
                   <Image
                     source={require('../images/delete.png')}
-                    style={[styles.icon, {marginTop: 20}]}
+                    style={[styles.icon, { marginTop: 20 }]}
                   />
                 </TouchableOpacity>
               </View>
+
             </View>
           );
         }}
@@ -103,30 +128,58 @@ const Items = () => {
 };
 
 export default Items;
+
 const styles = StyleSheet.create({
   container: {
+    marginTop: 10,
+    marginBottom: 70,
     flex: 1,
+  },
+  searchInput: {
+    height: 45,
+    margin: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 0.5,
+    borderColor: '#ccc',
   },
   itemView: {
     flexDirection: 'row',
-    width: '90%',
+    width: '94%',
     alignSelf: 'center',
     backgroundColor: '#fff',
     elevation: 4,
-    marginTop: 10,
+    marginTop: 8,
     borderRadius: 10,
-    height: 100,
-    marginBottom: 10,
+    height: 120,
+    marginBottom: 7,
   },
   itemImage: {
+    marginTop: 15,
     width: 90,
     height: 90,
     borderRadius: 10,
-    margin: 5,
+    marginLeft: 15,
+    marginRight: 5,
   },
   nameView: {
     width: '53%',
     margin: 10,
+  },
+  ratingView: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  star: {
+    fontSize: 16,
+    marginRight: 5,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   priceView: {
     flexDirection: 'row',

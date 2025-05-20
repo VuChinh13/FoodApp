@@ -26,26 +26,24 @@ const Checkout = ({navigation}) => {
     const user = await firestore().collection('users').doc(userId).get();
     setCartList(user._data.cart);
   };
+ 
   const getAddressList = async () => {
-    const userId = await AsyncStorage.getItem('USERID');
-    const addressId = await AsyncStorage.getItem('ADDRESS');
-    const user = await firestore().collection('users').doc(userId).get();
-    let tempDart = [];
-    tempDart = user._data.address;
-    tempDart.map(item => {
-      if (item.addressId == addressId) {
-        setSelectedAddress(
-          item.street +
-            ',' +
-            item.city +
-            ',' +
-            item.pincode +
-            ',' +
-            item.mobile,
-        );
-      }
-    });
-  };
+    try {
+      const userId = await AsyncStorage.getItem('USERID');
+      const addressId = await AsyncStorage.getItem('ADDRESS');
+      const user = await firestore().collection('users').doc(userId).get();
+      const addresses = user._data?.address || []; 
+      addresses.map(item => {
+        if (item.addressId === addressId) {
+          setSelectedAddress(
+            item.street + ',' + item.city + ',' + item.pincode + ',' + item.mobile,
+          );
+        }
+      });
+    } catch (error) {
+      console.error('Error while fetching address:', error);
+    }
+  };  
 
   const getTotal = () => {
     let total = 0;

@@ -1,10 +1,10 @@
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-import React, {useState} from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
 import LanguageModal from '../common/LangaugeModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {translation} from '../../utils';
+import { translation } from '../../utils';
 
-const SelectLogin = ({navigation}) => {
+const SelectLogin = ({ navigation }) => {
   const [langModalVisible, setLangModalVisible] = useState(false);
   const [selectedLang, setSelectedLang] = useState(0);
 
@@ -17,15 +17,16 @@ const SelectLogin = ({navigation}) => {
         {selectedLang == 0
           ? translation[0].English
           : selectedLang == 1
-          ? translation[0].Tamil
-          : selectedLang == 2
-          ? translation[0].Hindi
-          : selectedLang == 3
-          ? translation[0].Punjabi
-          : selectedLang == 4
-          ? translation[0].Urdu
-          : null}
+            ? translation[0].Tamil
+            : selectedLang == 2
+              ? translation[0].Hindi
+              : selectedLang == 3
+                ? translation[0].Punjabi
+                : selectedLang == 4
+                  ? translation[0].Urdu
+                  : null}
       </Text>
+
       <TouchableOpacity
         style={styles.btn}
         onPress={() => {
@@ -33,6 +34,7 @@ const SelectLogin = ({navigation}) => {
         }}>
         <Text style={styles.btnText}>Admin Login</Text>
       </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.btn}
         onPress={() => {
@@ -40,13 +42,15 @@ const SelectLogin = ({navigation}) => {
         }}>
         <Text style={styles.btnText}>User Login</Text>
       </TouchableOpacity>
+
       <TouchableOpacity
-        style={styles.selectLangaugeBtn}
+        style={styles.selectLanguageBtn}
         onPress={() => {
           setLangModalVisible(!langModalVisible);
         }}>
-        <Text>Select Language</Text>
+        <Text style={styles.selectLanguageText}>Select Language</Text>
       </TouchableOpacity>
+
       <LanguageModal
         langModalVisible={langModalVisible}
         setLangModalVisible={setLangModalVisible}
@@ -60,40 +64,57 @@ const SelectLogin = ({navigation}) => {
 };
 
 export default SelectLogin;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#D32F2F', // đỏ đậm
+    marginBottom: 50,
+    textAlign: 'center',
   },
   btn: {
-    backgroundColor: 'purple',
-    height: 50,
-    width: '90%',
-    borderRadius: 10,
+    backgroundColor: '#E53935', 
+    height: 50,                
+    width: '80%',              
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 30,
+    marginVertical: 8,         
+    shadowColor: '#D32F2F',
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
   btnText: {
-    fontSize: 18,
+    fontSize: 19,             
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  selectLangaugeBtn: {
-    width: '50%',
-    height: 50,
-    borderWidth: 0.2,
-    borderRadius: 10,
+
+  selectLanguageBtn: {
     position: 'absolute',
-    alignSelf: 'center',
-    bottom: 20,
+    bottom: 30,
+    width: '60%',
+    height: 50,
+    borderWidth: 1.5,
+    borderColor: '#D32F2F',
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    backgroundColor: '#fff',
+  },
+  selectLanguageText: {
+    fontSize: 16,
+    color: '#D32F2F',
+    fontWeight: '600',
   },
 });

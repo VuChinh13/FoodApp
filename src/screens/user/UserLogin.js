@@ -24,7 +24,7 @@ const UserLogin = ({navigation}) => {
     console.log(await AsyncStorage.getItem('LANG'));
     setSelectedLang(parseInt(await AsyncStorage.getItem('LANG')));
   };
-  const adminLogin = async () => {
+  const userLogin = async () => {
     setModalVisible(true);
     firestore()
       .collection('users')
@@ -57,6 +57,7 @@ const UserLogin = ({navigation}) => {
 
   const goToNextScreen = async (userId, mobile, name) => {
     await AsyncStorage.setItem('EMAIL', email);
+    await AsyncStorage.setItem('ROLE', 'user'); 
     await AsyncStorage.setItem('USERID', userId);
     await AsyncStorage.setItem('MOBILE', mobile);
     await AsyncStorage.setItem('NAME', name);
@@ -93,7 +94,7 @@ const UserLogin = ({navigation}) => {
         style={styles.loginBtn}
         onPress={() => {
           if (email !== '' && password !== '') {
-            adminLogin();
+            userLogin();
           } else {
             alert('Please Enter Data');
           }

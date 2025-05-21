@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,18 +7,20 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
-import { StripeProvider } from '@stripe/stripe-react-native';
+
 let userId = '';
+
 const Cart = ({ navigation }) => {
   const isFocused = useIsFocused();
   const [cartList, setCartList] = useState([]);
+
   useEffect(() => {
     getCartItems();
   }, [isFocused]);
+
   const getCartItems = async () => {
     userId = await AsyncStorage.getItem('USERID');
     const user = await firestore().collection('users').doc(userId).get();
@@ -26,10 +29,8 @@ const Cart = ({ navigation }) => {
 
   const addItem = async item => {
     const user = await firestore().collection('users').doc(userId).get();
-    let tempDart = [];
-    tempDart = user._data.cart;
-    tempDart = tempDart.map(itm => {
-      if (itm.id == item.id) {
+    let tempDart = user._data.cart.map(itm => {
+      if (itm.id === item.id) {
         return {
           ...itm,
           data: {
@@ -40,25 +41,19 @@ const Cart = ({ navigation }) => {
       }
       return itm;
     });
-    
-    firestore().collection('users').doc(userId).update({
-      cart: tempDart,
-    });
+
+    await firestore().collection('users').doc(userId).update({ cart: tempDart });
     getCartItems();
   };
- 
+
   const removeItem = async item => {
     const user = await firestore().collection('users').doc(userId).get();
-    let tempDart = [...user._data.cart];
-    tempDart = tempDart.map(itm => {
-      if (itm.id == item.id) {
+    let tempDart = user._data.cart.map(itm => {
+      if (itm.id === item.id) {
         let updatedQty = Number(itm.data.qty) - 1;
         if (updatedQty <= 0) {
-          // Nếu số lượng <= 0 thì xóa món hàng
-          deleteItem(item);
-          return itm;  // Không cần cập nhật lại qty nếu đã xóa món hàng
+          return null; // đánh dấu để filter sau
         } else {
-          // Nếu số lượng > 0 thì giảm số lượng
           return {
             ...itm,
             data: {
@@ -69,130 +64,60 @@ const Cart = ({ navigation }) => {
         }
       }
       return itm;
-    });
-  
-    // Cập nhật giỏ hàng sau khi đã thay đổi
-    firestore().collection('users').doc(userId).update({
-      cart: tempDart,
-    });
-    getCartItems();  // Tải lại danh sách giỏ hàng
-  };
-  
-  const deleteItem = async index => {
-    const user = await firestore().collection('users').doc(userId).get();
-    let tempDart = [];
-    tempDart = user._data.cart;
-    tempDart.splice(index, 1);
-    firestore().collection('users').doc(userId).update({
-      cart: tempDart,
-    });
+    }).filter(Boolean);
+
+    await firestore().collection('users').doc(userId).update({ cart: tempDart });
     getCartItems();
   };
 
   const getTotal = () => {
-    let total = 0;
-    cartList.forEach(item => {
-      const qty = Number(item?.data?.qty || 0);
-      const price = Number(item?.data?.discountPrice || 0);
-      total += qty * price;
-    });
-    return total.toFixed(2); // nếu muốn làm tròn
+    return cartList.reduce((total, item) => {
+      const qty = Number(item.data.qty || 0);
+      const price = Number(item.data.discountPrice || 0);
+      return total + qty * price;
+    }, 0).toFixed(2);
   };
 
   return (
     <View style={styles.container}>
       <FlatList
         data={cartList}
-        renderItem={({ item, index }) => {
-          return (
-            <View style={styles.itemView}>
-              <Image
-                source={{ uri: item.data.imageUrl }}
-                style={styles.itemImage}
-              />
-              <View style={styles.nameView}>
-                <Text style={styles.nameText}>{item.data.name}</Text>
-                <Text style={styles.descText}>{item.data.description}</Text>
-                <View style={styles.priceView}>
-                  <Text style={styles.priceText}>
-                    {'$' + item.data.discountPrice}
-                  </Text>
-                  <Text style={styles.discountText}>
-                    {'$' + item.data.price}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.addRemoveView}>
-                <TouchableOpacity
-                  style={[
-                    styles.addToCartBtn,
-                    {
-                      width: 30,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      marginRight: 15,
-                    },
-                  ]}
-                  onPress={() => {
-                    if (item.data.qty > 1) {
-                      removeItem(item);
-                    } else {
-                      deleteItem(index);
-                    }
-                  }}>
-                  <Text
-                    style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>
-                    -
-                  </Text>
-                </TouchableOpacity>
-                <Text style={{ fontSize: 16, fontWeight: '600' }}>
-                  {Number(item.data.qty) || 0}
-                </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.addToCartBtn,
-                    {
-                      width: 30,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      marginLeft: 15,
-                    },
-                  ]}
-                  onPress={() => {
-                    addItem(item);
-                  }}>
-                  <Text
-                    style={{
-                      color: '#fff',
-                      fontSize: 20,
-                      fontWeight: '700',
-                    }}>
-                    +
-                  </Text>
-                </TouchableOpacity>
+        renderItem={({ item }) => (
+          <View style={styles.itemView}>
+            <Image source={{ uri: item.data.imageUrl }} style={styles.itemImage} />
+            <View style={styles.middleView}>
+              <Text style={styles.nameText}>{item.data.name}</Text>
+              <Text style={styles.descText}>{item.data.vendor}</Text>
+              <View style={styles.priceView}>
+                <Text style={styles.priceText}>${item.data.discountPrice}</Text>
+                <Text style={styles.discountText}>${item.data.price}</Text>
               </View>
             </View>
-          );
-        }}
+            <View style={styles.addRemoveView}>
+              <TouchableOpacity
+                style={styles.qtyBtn}
+                onPress={() => item.data.qty > 1 ? removeItem(item) : null}>
+                <Text style={styles.qtyText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.qtyCount}>{item.data.qty}</Text>
+              <TouchableOpacity
+                style={styles.qtyBtn}
+                onPress={() => addItem(item)}>
+                <Text style={styles.qtyText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        keyExtractor={(_, index) => index.toString()}
       />
       {cartList.length > 0 && (
         <View style={styles.checkoutView}>
           <Text style={{ color: '#000', fontWeight: '600' }}>
-            {'Items(' + cartList.length + ')\nTotal: $' + getTotal()}
+            Items({cartList.length}){"\n"}Total: ${getTotal()}
           </Text>
           <TouchableOpacity
-            style={[
-              styles.addToCartBtn,
-              {
-                width: 100,
-                height: 40,
-                justifyContent: 'center',
-                alignItems: 'center',
-              },
-            ]}
-            onPress={() => {
-              navigation.navigate('Checkout');
-            }}>
+            style={styles.checkoutBtn}
+            onPress={() => navigation.navigate('Checkout')}>
             <Text style={{ color: '#fff' }}>Checkout</Text>
           </TouchableOpacity>
         </View>
@@ -202,73 +127,90 @@ const Cart = ({ navigation }) => {
 };
 
 export default Cart;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
   itemView: {
     flexDirection: 'row',
-    width: '90%',
-    alignSelf: 'center',
     backgroundColor: '#fff',
-    elevation: 4,
-    marginTop: 10,
+    marginHorizontal: 10,
+    marginVertical: 5,
     borderRadius: 10,
-    height: 100,
-    marginBottom: 10,
+    padding: 10,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 3,
   },
   itemImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 10,
-    margin: 5,
+    width: 70,
+    height: 70,
+    borderRadius: 8,
   },
-  nameView: {
-    width: '30%',
-    margin: 10,
+  middleView: {
+    flex: 1,
+    paddingHorizontal: 10,
+  },
+  nameText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  descText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#777',
   },
   priceView: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  nameText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  descText: {
-    fontSize: 14,
-    fontWeight: '600',
+    marginTop: 5,
   },
   priceText: {
-    fontSize: 18,
+    fontSize: 16,
     color: 'green',
     fontWeight: '700',
   },
   discountText: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 14,
     textDecorationLine: 'line-through',
-    marginLeft: 5,
+    marginLeft: 8,
+    color: '#888',
   },
   addRemoveView: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  addToCartBtn: {
+  qtyBtn: {
     backgroundColor: 'green',
-    padding: 10,
-    borderRadius: 10,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  qtyText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  qtyCount: {
+    marginHorizontal: 10,
+    fontSize: 16,
+    fontWeight: '600',
   },
   checkoutView: {
-    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
     height: 60,
     backgroundColor: '#fff',
-    position: 'absolute',
-    bottom: 0,
-    elevation: 5,
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
+    borderTopColor: '#eee',
+    borderTopWidth: 1,
+  },
+  checkoutBtn: {
+    backgroundColor: 'green',
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
 });

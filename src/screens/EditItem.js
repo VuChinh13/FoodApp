@@ -9,20 +9,20 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import React, {useState} from 'react';
-import {launchImageLibrary} from 'react-native-image-picker';
+import React, { useState } from 'react';
+import { launchImageLibrary } from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
-import {useRoute} from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 
 // Import Picker
-import {Picker} from '@react-native-picker/picker';
+import { Picker } from '@react-native-picker/picker';
 
-const EditItem = ({navigation}) => {
+const EditItem = ({ navigation }) => {
   const route = useRoute();
 
   const [imageData, setImageData] = useState({
-    assets: [{uri: route.params.data.imageUrl}],
+    assets: [{ uri: route.params.data.imageUrl }],
   });
   const [name, setName] = useState(route.params.data.name);
   const [price, setPrice] = useState(route.params.data.price);
@@ -65,7 +65,7 @@ const EditItem = ({navigation}) => {
   };
 
   const openGallery = async () => {
-    const result = await launchImageLibrary({mediaType: 'photo'});
+    const result = await launchImageLibrary({ mediaType: 'photo' });
     if (result.didCancel) {
       // user cancelled
     } else {
@@ -117,7 +117,7 @@ const EditItem = ({navigation}) => {
 
         {imageData !== null && imageData.assets && imageData.assets.length > 0 ? (
           <Image
-            source={{uri: imageData.assets[0].uri}}
+            source={{ uri: imageData.assets[0].uri }}
             style={styles.imageStyle}
           />
         ) : null}
@@ -143,11 +143,14 @@ const EditItem = ({navigation}) => {
           onChangeText={setDiscountPrice}
         />
         <TextInput
-          placeholder="Enter Item Description"
-          style={styles.inputStyle}
+          placeholder="Description"
+          style={[styles.inputStyle, { height: 100, textAlignVertical: 'top' }]} // tăng chiều cao để nhập nhiều dòng
           value={description}
           onChangeText={setDescription}
+          multiline={true}
+          numberOfLines={4}
         />
+
         {/* Thêm TextInput cho Vendor */}
         <TextInput
           placeholder="Enter Vendor"
@@ -163,12 +166,12 @@ const EditItem = ({navigation}) => {
         />
 
         {/* Picker chọn category */}
-        <View style={[styles.inputStyle, {padding: 0, justifyContent: 'center'}]}>
+        <View style={[styles.inputStyle, { padding: 0, justifyContent: 'center' }]}>
           <Picker
             selectedValue={category}
             onValueChange={(itemValue) => setCategory(itemValue)}
             mode="dropdown"
-            style={{width: '100%'}}
+            style={{ width: '100%' }}
           >
             <Picker.Item label="Select Category" value="" />
             <Picker.Item label="Drinks" value="Drinks" />
@@ -178,7 +181,7 @@ const EditItem = ({navigation}) => {
           </Picker>
         </View>
 
-        <Text style={{alignSelf: 'center', marginTop: 20}}>OR</Text>
+        <Text style={{ alignSelf: 'center', marginTop: 20 }}>OR</Text>
 
         <TouchableOpacity
           style={styles.pickBtn}
@@ -197,7 +200,7 @@ const EditItem = ({navigation}) => {
             uploadItem(imageUrl ? imageUrl : null);
           }}
         >
-          <Text style={{color: '#fff'}}>Upload Item</Text>
+          <Text style={{ color: '#fff' }}>Upload Item</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

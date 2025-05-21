@@ -10,11 +10,11 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import React, {useState} from 'react';
-import {launchImageLibrary} from 'react-native-image-picker';
+import React, { useState } from 'react';
+import { launchImageLibrary } from 'react-native-image-picker';
 import ImageResizer from 'react-native-image-resizer';
 import firestore from '@react-native-firebase/firestore';
-import {Picker} from '@react-native-picker/picker';
+import { Picker } from '@react-native-picker/picker';
 
 const Add = () => {
   const [imageData, setImageData] = useState(null);
@@ -94,7 +94,7 @@ const Add = () => {
         </View>
 
         {imageData !== null ? (
-          <Image source={{uri: imageData.uri}} style={styles.imageStyle} />
+          <Image source={{ uri: imageData.uri }} style={styles.imageStyle} />
         ) : null}
 
         <TextInput
@@ -119,10 +119,13 @@ const Add = () => {
         />
         <TextInput
           placeholder="Description"
-          style={styles.inputStyle}
+          style={[styles.inputStyle, { height: 100, textAlignVertical: 'top' }]} // tăng chiều cao để nhập nhiều dòng
           value={description}
           onChangeText={setDescription}
+          multiline={true}
+          numberOfLines={4}
         />
+
         <TextInput
           placeholder="Vendor"
           style={styles.inputStyle}
@@ -136,12 +139,12 @@ const Add = () => {
           onChangeText={setImageUrl}
         />
 
-        <View style={[styles.inputStyle, {padding: 0, justifyContent: 'center'}]}>
+        <View style={[styles.inputStyle, { padding: 0, justifyContent: 'center' }]}>
           <Picker
             selectedValue={category}
             onValueChange={(itemValue) => setCategory(itemValue)}
             mode="dropdown"
-            style={{width: '100%'}}>
+            style={{ width: '100%' }}>
             <Picker.Item label="Select Category" value="" />
             <Picker.Item label="Drinks" value="Drinks" />
             <Picker.Item label="Combos" value="Combos" />
@@ -150,7 +153,7 @@ const Add = () => {
           </Picker>
         </View>
 
-        <Text style={{alignSelf: 'center', marginTop: 20}}>OR</Text>
+        <Text style={{ alignSelf: 'center', marginTop: 20 }}>OR</Text>
 
         <TouchableOpacity
           style={styles.pickBtn}
@@ -159,7 +162,7 @@ const Add = () => {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.uploadBtn} onPress={uploadImage}>
-          <Text style={{color: '#fff'}}>Upload Item</Text>
+          <Text style={{ color: '#fff' }}>Upload Item</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

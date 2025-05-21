@@ -1,0 +1,26 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.foodapp-mergeDebugResources-38:/values-b+es+419/values-b+es+419.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\Admin\\.gradle\\caches\\transforms-3\\5127bc2a34b5b44df5fed64fb1a50b2e\\transformed\\jetified-play-services-wallet-18.1.3\\res\\values-b+es+419\\values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "208",
+                        "endColumns": "73",
+                        "endOffsets": "281"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "77",
+                        "endOffsets": "128"
+                    }
+                }
+            ]
+        }
+    ]
+}

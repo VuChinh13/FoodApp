@@ -1,4 +1,5 @@
-import React, {useState, useEffect} from 'react';
+// === Cập nhật code B để hỗ trợ hiển thị số lượng cart ===
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,14 +10,19 @@ import {
   Image,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 
 const categories = ['All', 'Combos', 'Sliders', 'Classic', 'Drinks'];
 
 const Main = () => {
+  const navigation = useNavigation();
+  const isFocused = useIsFocused();
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [items, setItems] = useState([]);           // Dữ liệu từ Firestore
-  const [filteredItems, setFilteredItems] = useState([]); // Dữ liệu đã lọc theo category
-  const [searchText, setSearchText] = useState(''); // Có thể dùng để search (nếu muốn)
+  const [items, setItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -37,23 +43,34 @@ const Main = () => {
     fetchItems();
   }, []);
 
-  // Lọc khi thay đổi category hoặc items hoặc searchText
   useEffect(() => {
     let filtered = items;
-
     if (selectedCategory !== 'All') {
       filtered = filtered.filter(item => item.category === selectedCategory);
     }
-
     if (searchText.trim() !== '') {
       const lowerSearch = searchText.toLowerCase();
       filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(lowerSearch),
       );
     }
-
     setFilteredItems(filtered);
   }, [selectedCategory, items, searchText]);
+
+  useEffect(() => {
+    getCartItems();
+  }, [isFocused]);
+
+  const getCartItems = async () => {
+    const userId = await AsyncStorage.getItem('USERID');
+    const user = await firestore().collection('users').doc(userId).get();
+    const cartData = user._data?.cart;
+    if (Array.isArray(cartData)) {
+      setCartCount(cartData.length);
+    } else {
+      setCartCount(0);
+    }
+  };
 
   const renderCategory = () => (
     <FlatList
@@ -61,8 +78,8 @@ const Main = () => {
       showsHorizontalScrollIndicator={false}
       data={categories}
       keyExtractor={item => item}
-      contentContainerStyle={{paddingHorizontal: 10}}
-      renderItem={({item}) => (
+      contentContainerStyle={{ paddingHorizontal: 10 }}
+      renderItem={({ item }) => (
         <TouchableOpacity
           style={[
             styles.categoryButton,
@@ -84,37 +101,51 @@ const Main = () => {
     />
   );
 
-  const renderItem = ({item}) => (
-    <View style={styles.card}>
-      <Image source={{uri: item.imageUrl || item.image}} style={styles.image} />
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => navigation.navigate('Detail', { item })}>
+      <Image source={{ uri: item.imageUrl || item.image }} style={styles.image} />
       <Text style={styles.name}>{item.name}</Text>
       <Text style={styles.subtitle}>{item.subtitle || item.vendor || ''}</Text>
       <View style={styles.ratingRow}>
         <Text style={styles.rating}>⭐ {item.rating ?? 0}</Text>
-        <TouchableOpacity>
-          <Text style={styles.heart}>🤍</Text>
-        </TouchableOpacity>
+        <Text style={styles.heart}>🤍</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <View>
           <Text style={styles.logoText}>FoodApp</Text>
           <Text style={styles.subText}>Order your favourite food!</Text>
         </View>
-        <TouchableOpacity style={styles.cartIcon}>
+        <TouchableOpacity
+          style={styles.cartIcon}
+          onPress={() => navigation.navigate('Cart')}>
           <Image
-            source={require('../../../images/cart.png')} // đường dẫn đúng tới file ảnh của bạn
-            style={{width: 28, height: 28}}
+            source={require('../../../images/cart.png')}
+            style={{ width: 28, height: 28 }}
           />
+          {cartCount > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                backgroundColor: 'red',
+                borderRadius: 10,
+                paddingHorizontal: 5,
+                paddingVertical: 1,
+              }}>
+              <Text style={{ color: 'white', fontSize: 12 }}>{cartCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <TextInput
           placeholder="Search"
@@ -124,17 +155,15 @@ const Main = () => {
         />
       </View>
 
-      {/* Categories */}
       <View style={styles.categoryContainer}>{renderCategory()}</View>
 
-      {/* Food Grid */}
       <FlatList
         numColumns={2}
         data={filteredItems}
         keyExtractor={item => item.id}
         renderItem={renderItem}
-        columnWrapperStyle={{justifyContent: 'space-between'}}
-        contentContainerStyle={{paddingHorizontal: 10}}
+        columnWrapperStyle={{ justifyContent: 'space-between' }}
+        contentContainerStyle={{ paddingHorizontal: 10 }}
       />
     </View>
   );
@@ -142,11 +171,12 @@ const Main = () => {
 
 export default Main;
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginBottom: 60, 
+    marginBottom: 60,
     paddingTop: 20,
   },
   header: {
@@ -205,7 +235,7 @@ const styles = StyleSheet.create({
     shadowColor: '#C62828',
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
   },
   image: {
     height: 100,

@@ -1,7 +1,7 @@
-import {View, Text} from 'react-native';
+import { View, Text } from 'react-native';
 import React from 'react';
-import {createStackNavigator} from '@react-navigation/stack';
-import {NavigationContainer} from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer } from '@react-navigation/native';
 import Splash from './screens/Splash';
 import Login from './screens/Login';
 import Dashboard from './screens/Dashboard';
@@ -15,6 +15,7 @@ import Checkout from './screens/user/checkout/Checkout';
 import Address from './screens/user/checkout/Address';
 import AddNewAddress from './screens/user/checkout/AddNewAddress';
 import OrderStatus from './screens/user/checkout/OrderStatus';
+import Detail from './screens/user/home_tabs/Detail';
 const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
@@ -23,68 +24,69 @@ const AppNavigator = () => {
         <Stack.Screen
           component={Splash}
           name="Splash"
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           component={Login}
           name="Login"
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           component={Dashboard}
           name="Dashboard"
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           component={EditItem}
           name="EditItem"
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           component={SelectLogin}
           name="SelectLogin"
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           component={UserLogin}
           name="UserLogin"
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           component={UserSignup}
           name="UserSignup"
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           component={Home}
           name="Home"
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           component={Cart}
           name="Cart"
-          options={{headerShown: true}}
+          options={{ headerShown: true }}
         />
         <Stack.Screen
           component={Checkout}
           name="Checkout"
-          options={{headerShown: true}}
+          options={{ headerShown: true }}
         />
         <Stack.Screen
           component={Address}
           name="Address"
-          options={{headerShown: true}}
+          options={{ headerShown: true }}
         />
         <Stack.Screen
           component={AddNewAddress}
           name="AddNewAddress"
-          options={{headerShown: true}}
+          options={{ headerShown: true }}
         />
         <Stack.Screen
           component={OrderStatus}
           name="OrderStatus"
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
+        <Stack.Screen component={Detail} name="Detail" options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

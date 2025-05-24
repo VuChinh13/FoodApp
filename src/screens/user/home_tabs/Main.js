@@ -1,4 +1,3 @@
-// === Cập nhật code B để hỗ trợ hiển thị số lượng cart ===
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -23,6 +22,7 @@ const Main = () => {
   const [filteredItems, setFilteredItems] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [cartCount, setCartCount] = useState(0);
+  const [wishlist, setWishlist] = useState([]);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -59,17 +59,35 @@ const Main = () => {
 
   useEffect(() => {
     getCartItems();
+    getWishlist();
   }, [isFocused]);
 
   const getCartItems = async () => {
     const userId = await AsyncStorage.getItem('USERID');
     const user = await firestore().collection('users').doc(userId).get();
     const cartData = user._data?.cart;
-    if (Array.isArray(cartData)) {
-      setCartCount(cartData.length);
-    } else {
-      setCartCount(0);
-    }
+    setCartCount(Array.isArray(cartData) ? cartData.length : 0);
+  };
+
+  const getWishlist = async () => {
+    const userId = await AsyncStorage.getItem('USERID');
+    const user = await firestore().collection('users').doc(userId).get();
+    const wish = user._data?.wishlist;
+    setWishlist(Array.isArray(wish) ? wish : []);
+  };
+
+  const toggleWishlist = async itemId => {
+    const userId = await AsyncStorage.getItem('USERID');
+    const userRef = firestore().collection('users').doc(userId);
+
+    const isWished = wishlist.includes(itemId);
+    const updatedWishlist = isWished
+      ? wishlist.filter(id => id !== itemId)
+      : [...wishlist, itemId];
+
+    setWishlist(updatedWishlist);
+
+    await userRef.update({ wishlist: updatedWishlist });
   };
 
   const renderCategory = () => (
@@ -101,19 +119,27 @@ const Main = () => {
     />
   );
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('Detail', { item })}>
-      <Image source={{ uri: item.imageUrl || item.image }} style={styles.image} />
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.subtitle}>{item.subtitle || item.vendor || ''}</Text>
-      <View style={styles.ratingRow}>
-        <Text style={styles.rating}>⭐ {item.rating ?? 0}</Text>
-        <Text style={styles.heart}>🤍</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }) => {
+    const isWished = wishlist.includes(item.id);
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('Detail', { item })}>
+        <Image source={{ uri: item.imageUrl || item.image }} style={styles.image} />
+        <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.subtitle}>{item.subtitle || item.vendor || ''}</Text>
+        <View style={styles.ratingRow}>
+          <Text style={styles.rating}>⭐ {item.rating ?? 0}</Text>
+          <TouchableOpacity onPress={() => toggleWishlist(item.id)}>
+            <Text style={[styles.heart, { color: isWished ? 'red' : 'black' }]}>
+              ❤️
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -171,7 +197,6 @@ const Main = () => {
 
 export default Main;
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -189,15 +214,15 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#C62828', // đỏ đậm
+    color: '#C62828',
   },
   subText: {
-    color: '#8E1C1C', // đỏ nhạt hơn
+    color: '#8E1C1C',
     fontSize: 14,
     marginTop: 2,
   },
   cartIcon: {
-    backgroundColor: '#F9EBEA', // đỏ rất nhạt
+    backgroundColor: '#F9EBEA',
     padding: 8,
     borderRadius: 30,
   },
@@ -211,7 +236,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 45,
     borderRadius: 10,
-    backgroundColor: '#FDECEA', // đỏ nhạt
+    backgroundColor: '#FDECEA',
     paddingHorizontal: 15,
     fontSize: 16,
     color: '#4A0000',
@@ -226,7 +251,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   card: {
-    backgroundColor: '#FFF5F5', // nền hồng nhạt đỏ
+    backgroundColor: '#FFF5F5',
     borderRadius: 12,
     elevation: 2,
     width: '48%',
@@ -266,4 +291,3 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
 });
-

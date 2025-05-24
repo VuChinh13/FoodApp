@@ -11,11 +11,8 @@ import {
 } from 'react-native';
 import React, { useState } from 'react';
 import { launchImageLibrary } from 'react-native-image-picker';
-import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
 import { useRoute } from '@react-navigation/native';
-
-// Import Picker
 import { Picker } from '@react-native-picker/picker';
 
 const EditItem = ({ navigation }) => {
@@ -28,12 +25,7 @@ const EditItem = ({ navigation }) => {
   const [price, setPrice] = useState(route.params.data.price);
   const [discountPrice, setDiscountPrice] = useState(route.params.data.discountPrice);
   const [description, setDescription] = useState(route.params.data.description);
-  const [imageUrl, setImageUrl] = useState('');
-
-  // Thêm state vendor
   const [vendor, setVendor] = useState(route.params.data.vendor || '');
-
-  // Thêm state category, lấy giá trị ban đầu từ data
   const [category, setCategory] = useState(route.params.data.category || '');
 
   const requestCameraPermission = async () => {
@@ -42,10 +34,8 @@ const EditItem = ({ navigation }) => {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.CAMERA,
           {
-            title: 'Cool Photo App Camera Permission',
-            message:
-              'Cool Photo App needs access to your camera ' +
-              'so you can take awesome pictures.',
+            title: 'App Camera Permission',
+            message: 'App needs access to your camera to select images.',
             buttonNeutral: 'Ask Me Later',
             buttonNegative: 'Cancel',
             buttonPositive: 'OK',
@@ -66,24 +56,43 @@ const EditItem = ({ navigation }) => {
 
   const openGallery = async () => {
     const result = await launchImageLibrary({ mediaType: 'photo' });
-    if (result.didCancel) {
-      // user cancelled
-    } else {
+    if (!result.didCancel) {
       setImageData(result);
     }
   };
 
-  // Nếu muốn upload ảnh mới lên Firebase Storage (hiện chưa sử dụng)
-  const uploadImage = async () => {
-    if (!imageData.assets[0].fileName) {
-      return;
-    }
-    const reference = storage().ref(imageData.assets[0].fileName);
-    const pathToFile = imageData.assets[0].uri;
-    await reference.putFile(pathToFile);
-    const url = await reference.getDownloadURL();
-    uploadItem(url);
+  const uploadImageToCloudinary = async () => {
+  const file = {
+    uri: imageData.assets[0].uri,
+    type: 'image/jpeg',
+    name: 'upload.jpg',
   };
+
+  const data = new FormData();
+  data.append('file', file);
+  data.append('upload_preset', 'upload_zxmimtwp');  // preset đúng
+  data.append('folder', 'admin_food');
+
+  try {
+    const res = await fetch('https://api.cloudinary.com/v1_1/dsjsdyba7/image/upload', {
+      method: 'POST',
+      body: data,
+    });
+
+    const json = await res.json();
+    console.log('Cloudinary response:', json); // ✅ debug thêm nếu cần
+
+    if (!res.ok || !json.secure_url) {
+      return null;
+    }
+
+    return json.secure_url;
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+    return null;
+  }
+};
+
 
   const uploadItem = (uploadedImageUrl) => {
     firestore()
@@ -91,12 +100,12 @@ const EditItem = ({ navigation }) => {
       .doc(route.params.id)
       .update({
         name: name,
-        price: price,
-        discountPrice: discountPrice,
+        price: parseFloat(price),
+        discountPrice: parseFloat(discountPrice),
         description: description,
-        imageUrl: uploadedImageUrl || route.params.data.imageUrl,
+        imageUrl: uploadedImageUrl,
         category: category,
-        vendor: vendor, // cập nhật vendor
+        vendor: vendor,
       })
       .then(() => {
         console.log('Item updated!');
@@ -115,12 +124,12 @@ const EditItem = ({ navigation }) => {
           <Text style={styles.headerText}>Edit Item</Text>
         </View>
 
-        {imageData !== null && imageData.assets && imageData.assets.length > 0 ? (
+        {imageData?.assets?.length > 0 && (
           <Image
             source={{ uri: imageData.assets[0].uri }}
             style={styles.imageStyle}
           />
-        ) : null}
+        )}
 
         <TextInput
           placeholder="Enter Item Name"
@@ -144,28 +153,19 @@ const EditItem = ({ navigation }) => {
         />
         <TextInput
           placeholder="Description"
-          style={[styles.inputStyle, { height: 100, textAlignVertical: 'top' }]} // tăng chiều cao để nhập nhiều dòng
+          style={[styles.inputStyle, { height: 100, textAlignVertical: 'top' }]}
           value={description}
           onChangeText={setDescription}
           multiline={true}
           numberOfLines={4}
         />
-
-        {/* Thêm TextInput cho Vendor */}
         <TextInput
           placeholder="Enter Vendor"
           style={styles.inputStyle}
           value={vendor}
           onChangeText={setVendor}
         />
-        <TextInput
-          placeholder="Enter Item Image URL"
-          style={styles.inputStyle}
-          value={imageUrl}
-          onChangeText={setImageUrl}
-        />
 
-        {/* Picker chọn category */}
         <View style={[styles.inputStyle, { padding: 0, justifyContent: 'center' }]}>
           <Picker
             selectedValue={category}
@@ -181,23 +181,32 @@ const EditItem = ({ navigation }) => {
           </Picker>
         </View>
 
-        <Text style={{ alignSelf: 'center', marginTop: 20 }}>OR</Text>
-
         <TouchableOpacity
           style={styles.pickBtn}
-          onPress={() => requestCameraPermission()}
+          onPress={requestCameraPermission}
         >
           <Text>Select Image from Gallery</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.uploadBtn}
-          onPress={() => {
-            // Nếu muốn upload ảnh lên Firebase Storage trước rồi mới update Firestore, gọi uploadImage()
-            // uploadImage();
+          onPress={async () => {
+            let finalImageUrl = route.params.data.imageUrl;
 
-            // Hiện tại chỉ cập nhật Firestore với imageUrl hiện tại
-            uploadItem(imageUrl ? imageUrl : null);
+            if (
+              imageData?.assets?.length > 0 &&
+              imageData.assets[0].uri !== route.params.data.imageUrl
+            ) {
+              const url = await uploadImageToCloudinary();
+              if (url) {
+                finalImageUrl = url;
+              } else {
+                alert('Failed to upload image');
+                return;
+              }
+            }
+
+            uploadItem(finalImageUrl);
           }}
         >
           <Text style={{ color: '#fff' }}>Upload Item</Text>

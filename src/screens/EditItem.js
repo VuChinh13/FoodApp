@@ -7,6 +7,7 @@ import {
   PermissionsAndroid,
   Image,
   ScrollView,
+  Alert,
   Platform,
 } from 'react-native';
 import React, { useState } from 'react';
@@ -22,6 +23,7 @@ const EditItem = ({ navigation }) => {
     assets: [{ uri: route.params.data.imageUrl }],
   });
   const [name, setName] = useState(route.params.data.name);
+  const [rating, setRating] = useState(route.params.data.rating?.toString() || '');
   const [price, setPrice] = useState(route.params.data.price);
   const [discountPrice, setDiscountPrice] = useState(route.params.data.discountPrice);
   const [description, setDescription] = useState(route.params.data.description);
@@ -34,17 +36,17 @@ const EditItem = ({ navigation }) => {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.CAMERA,
           {
-            title: 'App Camera Permission',
-            message: 'App needs access to your camera to select images.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
+            title: 'Quyền truy cập Camera',
+            message: 'Ứng dụng cần quyền truy cập camera để chọn ảnh.',
+            buttonNeutral: 'Hỏi lại sau',
+            buttonNegative: 'Hủy',
+            buttonPositive: 'Đồng ý',
           },
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           openGallery();
         } else {
-          console.log('Camera permission denied');
+          Alert.alert('Thông báo', 'Bạn cần cấp quyền truy cập camera.');
         }
       } else {
         openGallery();
@@ -55,73 +57,88 @@ const EditItem = ({ navigation }) => {
   };
 
   const openGallery = async () => {
-    const result = await launchImageLibrary({ mediaType: 'photo' });
-    if (!result.didCancel) {
-      setImageData(result);
+    try {
+      const result = await launchImageLibrary({ mediaType: 'photo' });
+      if (result.didCancel) {
+        return;
+      }
+      if (result.errorCode) {
+        Alert.alert('Lỗi', 'Không thể mở thư viện ảnh: ' + result.errorMessage);
+        return;
+      }
+      if (result.assets && result.assets.length > 0) {
+        setImageData(result);
+      } else {
+        Alert.alert('Lỗi', 'Không có ảnh được chọn.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi mở thư viện ảnh:', error);
+      Alert.alert('Lỗi', 'Đã xảy ra lỗi khi chọn ảnh.');
     }
   };
 
   const uploadImageToCloudinary = async () => {
-  const file = {
-    uri: imageData.assets[0].uri,
-    type: 'image/jpeg',
-    name: 'upload.jpg',
-  };
+    if (!imageData) return null;
 
-  const data = new FormData();
-  data.append('file', file);
-  data.append('upload_preset', 'upload_zxmimtwp');  // preset đúng
-  data.append('folder', 'admin_food');
+    const file = {
+      uri: imageData.assets[0].uri,
+      type: imageData.assets[0].type || 'image/jpeg',
+      name: imageData.assets[0].fileName || 'upload.jpg',
+    };
 
-  try {
-    const res = await fetch('https://api.cloudinary.com/v1_1/dsjsdyba7/image/upload', {
-      method: 'POST',
-      body: data,
-    });
+    const data = new FormData();
+    data.append('file', file);
+    data.append('upload_preset', 'upload_zxmimtwp');
+    data.append('folder', 'admin_food');
 
-    const json = await res.json();
-    console.log('Cloudinary response:', json); // ✅ debug thêm nếu cần
+    try {
+      const res = await fetch('https://api.cloudinary.com/v1_1/dsjsdyba7/image/upload', {
+        method: 'POST',
+        body: data,
+      });
 
-    if (!res.ok || !json.secure_url) {
+      const json = await res.json();
+      console.log('Phản hồi Cloudinary:', json);
+
+      if (!res.ok || !json.secure_url) {
+        return null;
+      }
+
+      return json.secure_url;
+    } catch (error) {
+      console.error('Lỗi upload ảnh Cloudinary:', error);
       return null;
     }
+  };
 
-    return json.secure_url;
-  } catch (error) {
-    console.error('Cloudinary upload error:', error);
-    return null;
-  }
-};
-
-
-  const uploadItem = (uploadedImageUrl) => {
-    firestore()
-      .collection('items')
-      .doc(route.params.id)
-      .update({
-        name: name,
-        price: parseFloat(price),
-        discountPrice: parseFloat(discountPrice),
-        description: description,
-        imageUrl: uploadedImageUrl,
-        category: category,
-        vendor: vendor,
-      })
-      .then(() => {
-        console.log('Item updated!');
-        navigation.goBack();
-      })
-      .catch(error => {
-        console.error('Update error:', error);
-        alert('Failed to update item.');
-      });
+  const uploadItem = async (uploadedImageUrl) => {
+    try {
+      await firestore()
+        .collection('items')
+        .doc(route.params.id)
+        .update({
+          name: name,
+          price: parseFloat(price),
+          discountPrice: parseFloat(discountPrice),
+          description: description,
+          imageUrl: uploadedImageUrl,
+          category: category,
+          vendor: vendor,
+          rating: parseFloat(rating) || 0,
+        });
+      Alert.alert('Thành công', 'Cập nhật món ăn thành công!');
+      navigation.goBack();
+    } catch (error) {
+      console.error('Lỗi cập nhật:', error);
+      Alert.alert('Lỗi', 'Cập nhật món ăn thất bại.');
+    }
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>Edit Item</Text>
+          <Text style={styles.headerText}>Chỉnh sửa món ăn</Text>
         </View>
 
         {imageData?.assets?.length > 0 && (
@@ -132,27 +149,27 @@ const EditItem = ({ navigation }) => {
         )}
 
         <TextInput
-          placeholder="Enter Item Name"
+          placeholder="Nhập tên món ăn"
           style={styles.inputStyle}
           value={name}
           onChangeText={setName}
         />
         <TextInput
-          placeholder="Enter Item Price"
+          placeholder="Nhập giá món ăn"
           style={styles.inputStyle}
-          value={price.toString()}
+          value={price?.toString()}
           keyboardType="numeric"
           onChangeText={setPrice}
         />
         <TextInput
-          placeholder="Enter Item Discount Price"
+          placeholder="Nhập giá giảm (nếu có)"
           style={styles.inputStyle}
-          value={discountPrice.toString()}
+          value={discountPrice?.toString()}
           keyboardType="numeric"
           onChangeText={setDiscountPrice}
         />
         <TextInput
-          placeholder="Description"
+          placeholder="Mô tả món ăn"
           style={[styles.inputStyle, { height: 100, textAlignVertical: 'top' }]}
           value={description}
           onChangeText={setDescription}
@@ -160,10 +177,17 @@ const EditItem = ({ navigation }) => {
           numberOfLines={4}
         />
         <TextInput
-          placeholder="Enter Vendor"
+          placeholder="Nhà cung cấp"
           style={styles.inputStyle}
           value={vendor}
           onChangeText={setVendor}
+        />
+        <TextInput
+          placeholder="Điểm đánh giá (0 - 5)"
+          style={styles.inputStyle}
+          value={rating}
+          keyboardType="numeric"
+          onChangeText={setRating}
         />
 
         <View style={[styles.inputStyle, { padding: 0, justifyContent: 'center' }]}>
@@ -173,11 +197,11 @@ const EditItem = ({ navigation }) => {
             mode="dropdown"
             style={{ width: '100%' }}
           >
-            <Picker.Item label="Select Category" value="" />
-            <Picker.Item label="Drinks" value="Drinks" />
-            <Picker.Item label="Combos" value="Combos" />
-            <Picker.Item label="Sliders" value="Sliders" />
-            <Picker.Item label="Classic" value="Classic" />
+            <Picker.Item label="Chọn danh mục" value="" />
+            <Picker.Item label="Đồ uống" value="Đồ uống" />
+            <Picker.Item label="Combo" value="Combo" />
+            <Picker.Item label="Bánh mì kẹp" value="Bánh mì kẹp" />
+            <Picker.Item label="Kinh điển" value="Kinh điển" />
           </Picker>
         </View>
 
@@ -185,7 +209,7 @@ const EditItem = ({ navigation }) => {
           style={styles.pickBtn}
           onPress={requestCameraPermission}
         >
-          <Text>Select Image from Gallery</Text>
+          <Text>Chọn ảnh từ thư viện</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -201,7 +225,7 @@ const EditItem = ({ navigation }) => {
               if (url) {
                 finalImageUrl = url;
               } else {
-                alert('Failed to upload image');
+                Alert.alert('Lỗi', 'Tải ảnh lên thất bại.');
                 return;
               }
             }
@@ -209,7 +233,7 @@ const EditItem = ({ navigation }) => {
             uploadItem(finalImageUrl);
           }}
         >
-          <Text style={{ color: '#fff' }}>Upload Item</Text>
+          <Text style={{ color: '#fff' }}>Cập nhật món ăn</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

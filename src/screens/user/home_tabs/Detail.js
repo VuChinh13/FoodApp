@@ -64,8 +64,8 @@ const Detail = ({ route }) => {
                     </View>
                     <Text style={styles.vendor}>{item.vendor}</Text>
                     <View style={styles.priceRow}>
-                        <Text style={styles.discountPrice}>${item.discountPrice}</Text>
-                        <Text style={styles.price}>${item.price}</Text>
+                        <Text style={styles.discountPrice}>{item.discountPrice}đ</Text>
+                        <Text style={styles.price}>{item.price}đ</Text>
                     </View>
                     <Text style={styles.description}>
                         {item.description || 'Không có mô tả'}

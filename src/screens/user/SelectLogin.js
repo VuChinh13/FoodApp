@@ -4,14 +4,14 @@ import React from 'react';
 const SelectLogin = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to the App</Text>
+      <Text style={styles.title}>Chào mừng đến với FoodApp</Text>
 
       <TouchableOpacity
         style={styles.btn}
         onPress={() => {
           navigation.navigate('Login');
         }}>
-        <Text style={styles.btnText}>Admin Login</Text>
+        <Text style={styles.btnText}>Đăng nhập Admin</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -19,7 +19,7 @@ const SelectLogin = ({ navigation }) => {
         onPress={() => {
           navigation.navigate('UserLogin');
         }}>
-        <Text style={styles.btnText}>User Login</Text>
+        <Text style={styles.btnText}>Đăng nhập người dùng</Text>
       </TouchableOpacity>
     </View>
   );

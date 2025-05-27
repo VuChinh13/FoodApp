@@ -57,26 +57,26 @@ const AddNewAddress = ({ navigation }) => {
     <View style={styles.container}>
       <TextInput
         style={styles.inputStyle}
-        placeholder="Enter Street"
+        placeholder="Nhập tên đường"
         value={street}
         onChangeText={txt => setStreet(txt)}
       />
       <TextInput
         style={styles.inputStyle}
-        placeholder="Enter City"
+        placeholder="Nhập tên thành phố"
         value={city}
         onChangeText={txt => setCity(txt)}
       />
       <TextInput
         style={styles.inputStyle}
-        placeholder="Enter Mobile"
+        placeholder="Nhập số điện thoại"
         value={mobile}
         maxLength={10}
         keyboardType="number-pad"
         onChangeText={txt => setMobile(txt)}
       />
       <TouchableOpacity style={styles.addNewBtn} onPress={saveAddress}>
-        <Text style={styles.btnText}>Save Address</Text>
+        <Text style={styles.btnText}>Lưu địa chỉ</Text>
       </TouchableOpacity>
     </View>
   );

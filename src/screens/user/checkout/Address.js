@@ -58,7 +58,6 @@ const Address = ({navigation}) => {
               <View>
                 <Text>{'Street: ' + item.street}</Text>
                 <Text>{'City: ' + item.city}</Text>
-                <Text>{'Pincode: ' + item.pincode}</Text>
                 <Text>{'Mobile: ' + item.mobile}</Text>
               </View>
               {item.selected == true ? (
@@ -81,7 +80,7 @@ const Address = ({navigation}) => {
         onPress={() => {
           navigation.navigate('AddNewAddress');
         }}>
-        <Text style={styles.btnText}>Add New Address</Text>
+        <Text style={styles.btnText}>Thêm địa chỉ mới</Text>
       </TouchableOpacity>
     </View>
   );

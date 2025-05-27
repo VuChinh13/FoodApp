@@ -52,17 +52,17 @@ const UserLogin = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>User Login</Text>
+      <Text style={styles.title}>Đăng nhập người dùng</Text>
 
       <TextInput
         style={styles.inputStyle}
-        placeholder="Enter Email Id"
+        placeholder="Nhập email"
         value={email}
         onChangeText={txt => setEmail(txt)}
       />
       <TextInput
         style={styles.inputStyle}
-        placeholder="Enter Password"
+        placeholder="Nhập mật khẩu"
         value={password}
         onChangeText={txt => setPassword(txt)}
       />
@@ -76,7 +76,7 @@ const UserLogin = ({ navigation }) => {
             alert('Please Enter Data');
           }
         }}>
-        <Text style={styles.btnText}>Login</Text>
+        <Text style={styles.btnText}>Đăng nhập</Text>
       </TouchableOpacity>
 
       <Text
@@ -84,7 +84,7 @@ const UserLogin = ({ navigation }) => {
         onPress={() => {
           navigation.navigate('UserSignup');
         }}>
-        Create New Account
+       Tạo tài khoản mới
       </Text>
 
       <Loader modalVisible={modalVisible} setModalVisible={setModalVisible} />

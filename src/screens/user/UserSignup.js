@@ -40,29 +40,29 @@ const UserSignup = ({ navigation }) => {
   };
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign up</Text>
+      <Text style={styles.title}>Đăng ký</Text>
       <TextInput
         style={styles.inputStyle}
-        placeholder={'Enter Name'}
+        placeholder={'Nhập tên'}
         value={name}
         onChangeText={txt => setName(txt)}
       />
       <TextInput
         style={styles.inputStyle}
-        placeholder={'Enter Email Id'}
+        placeholder={'Nhập email:'}
         value={email}
         onChangeText={txt => setEmail(txt)}
       />
       <TextInput
         style={styles.inputStyle}
-        placeholder={'Enter Mobile'}
+        placeholder={'Nhập số điện thoại'}
         keyboardType={'number-pad'}
         value={mobile}
         onChangeText={txt => setMobile(txt)}
       />
       <TextInput
         style={styles.inputStyle}
-        placeholder={'Enter Password '}
+        placeholder={'Nhập mật khẩu'}
         value={password}
         onChangeText={txt => setPassword(txt)}
       />
@@ -81,7 +81,7 @@ const UserSignup = ({ navigation }) => {
             alert('Please Enter Data');
           }
         }}>
-        <Text style={styles.btnText}>Sign up</Text>
+        <Text style={styles.btnText}>Đăng ký</Text>
       </TouchableOpacity>
       <Loader modalVisible={modalVisible} setModalVisible={setModalVisible} />
     </View>

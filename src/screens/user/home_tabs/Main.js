@@ -7,26 +7,30 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
+import Toast from "react-native-toast-message";
 
-const categories = ['All', 'Combos', 'Sliders', 'Classic', 'Drinks'];
+const categories = ['Tất cả', 'Combo', 'Bánh mì kẹp', 'Kinh điển', 'Đồ uống'];
 
 const Main = () => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [cartCount, setCartCount] = useState(0);
   const [wishlist, setWishlist] = useState([]);
+  const [loading, setLoading] = useState(true); // ✅ Thêm state loading
 
   useEffect(() => {
     const fetchItems = async () => {
       try {
+        setLoading(true); // ✅ Bắt đầu loading
         const querySnapshot = await firestore().collection('items').get();
         const data = [];
         querySnapshot.forEach(doc => {
@@ -37,7 +41,9 @@ const Main = () => {
         });
         setItems(data);
       } catch (error) {
-        console.log('Error fetching items: ', error);
+        console.log('Lỗi khi lấy món ăn: ', error);
+      } finally {
+        setLoading(false); // ✅ Kết thúc loading
       }
     };
     fetchItems();
@@ -45,7 +51,7 @@ const Main = () => {
 
   useEffect(() => {
     let filtered = items;
-    if (selectedCategory !== 'All') {
+    if (selectedCategory !== 'Tất cả') {
       filtered = filtered.filter(item => item.category === selectedCategory);
     }
     if (searchText.trim() !== '') {
@@ -64,30 +70,59 @@ const Main = () => {
 
   const getCartItems = async () => {
     const userId = await AsyncStorage.getItem('USERID');
-    const user = await firestore().collection('users').doc(userId).get();
-    const cartData = user._data?.cart;
-    setCartCount(Array.isArray(cartData) ? cartData.length : 0);
+    if (userId) {
+      const user = await firestore().collection('users').doc(userId).get();
+      const cartData = user._data?.cart;
+      setCartCount(Array.isArray(cartData) ? cartData.length : 0);
+    }
   };
 
   const getWishlist = async () => {
     const userId = await AsyncStorage.getItem('USERID');
-    const user = await firestore().collection('users').doc(userId).get();
-    const wish = user._data?.wishlist;
-    setWishlist(Array.isArray(wish) ? wish : []);
+    if (userId) {
+      const user = await firestore().collection('users').doc(userId).get();
+      const wish = user._data?.wishlist || [];
+      setWishlist(Array.isArray(wish) ? wish : []);
+    } else {
+      setWishlist([]);
+    }
   };
 
   const toggleWishlist = async itemId => {
     const userId = await AsyncStorage.getItem('USERID');
-    const userRef = firestore().collection('users').doc(userId);
+    if (userId) {
+      const userRef = firestore().collection('users').doc(userId);
 
-    const isWished = wishlist.includes(itemId);
-    const updatedWishlist = isWished
-      ? wishlist.filter(id => id !== itemId)
-      : [...wishlist, itemId];
+      const isWished = wishlist.includes(itemId);
+      const updatedWishlist = isWished
+        ? wishlist.filter(id => id !== itemId)
+        : [...wishlist, itemId];
 
-    setWishlist(updatedWishlist);
+      setWishlist(updatedWishlist);
+      await userRef.update({ wishlist: updatedWishlist });
 
-    await userRef.update({ wishlist: updatedWishlist });
+      if (!isWished) {
+        Toast.show({
+          type: 'success',
+          text1: 'Thành công',
+          text2: 'Đã thêm món ăn vào mục yêu thích.',
+          position: 'top',
+          visibilityTime: 2000,
+          autoHide: true,
+          topOffset: 30,
+        });
+      } else {
+        Toast.show({
+          type: 'info',
+          text1: 'Thông báo',
+          text2: 'Đã xóa món ăn khỏi mục yêu thích.',
+          position: 'top',
+          visibilityTime: 2000,
+          autoHide: true,
+          topOffset: 30,
+        });
+      }
+    }
   };
 
   const renderCategory = () => (
@@ -121,19 +156,33 @@ const Main = () => {
 
   const renderItem = ({ item }) => {
     const isWished = wishlist.includes(item.id);
+    const displayPrice = (item.discountPrice !== null && item.discountPrice !== undefined && item.discountPrice > 0)
+      ? item.discountPrice
+      : (item.price !== null && item.price !== undefined ? item.price : 0);
 
     return (
       <TouchableOpacity
         style={styles.card}
         onPress={() => navigation.navigate('Detail', { item })}>
         <Image source={{ uri: item.imageUrl || item.image }} style={styles.image} />
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.subtitle}>{item.subtitle || item.vendor || ''}</Text>
+        <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.subtitle} numberOfLines={1}>{item.subtitle || item.vendor || ''}</Text>
+        <Text style={styles.price}>
+          {displayPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+        </Text>
+
         <View style={styles.ratingRow}>
-          <Text style={styles.rating}>⭐ {item.rating ?? 0}</Text>
-          <TouchableOpacity onPress={() => toggleWishlist(item.id)}>
-            <Text style={[styles.heart, { color: isWished ? 'red' : 'black' }]}>
-              ❤️
+          <Text style={styles.rating}>⭐ {item.rating?.toFixed(1) ?? 0}</Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => toggleWishlist(item.id)}
+            style={styles.iconContainer}>
+            <Text
+              style={[
+                styles.heart,
+                { color: isWished ? '#C62828' : '#A0A0A0' },
+              ]}>
+              {'\u2665'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -146,7 +195,7 @@ const Main = () => {
       <View style={styles.header}>
         <View>
           <Text style={styles.logoText}>FoodApp</Text>
-          <Text style={styles.subText}>Order your favourite food!</Text>
+          <Text style={styles.subText}>Đặt món ăn yêu thích của bạn!</Text>
         </View>
         <TouchableOpacity
           style={styles.cartIcon}
@@ -156,41 +205,41 @@ const Main = () => {
             style={{ width: 28, height: 28 }}
           />
           {cartCount > 0 && (
-            <View
-              style={{
-                position: 'absolute',
-                top: -4,
-                right: -4,
-                backgroundColor: 'red',
-                borderRadius: 10,
-                paddingHorizontal: 5,
-                paddingVertical: 1,
-              }}>
-              <Text style={{ color: 'white', fontSize: 12 }}>{cartCount}</Text>
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartCount}</Text>
             </View>
           )}
         </TouchableOpacity>
       </View>
 
-      <View style={styles.searchContainer}>
+      <View style={styles.searchBarContainer}>
         <TextInput
-          placeholder="Search"
           style={styles.searchInput}
+          placeholder="Tìm kiếm món ăn....."
+          placeholderTextColor="#888"
           value={searchText}
           onChangeText={setSearchText}
+          clearButtonMode="while-editing"
         />
       </View>
 
       <View style={styles.categoryContainer}>{renderCategory()}</View>
 
-      <FlatList
-        numColumns={2}
-        data={filteredItems}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        columnWrapperStyle={{ justifyContent: 'space-between' }}
-        contentContainerStyle={{ paddingHorizontal: 10 }}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#C62828" />
+          <Text style={{ marginTop: 10, color: '#C62828' }}>Đang tải dữ liệu...</Text>
+        </View>
+      ) : (
+        <FlatList
+          numColumns={2}
+          data={filteredItems}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 10 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      )}
     </View>
   );
 };
@@ -200,9 +249,9 @@ export default Main;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginBottom: 40,
     backgroundColor: '#fff',
-    marginBottom: 60,
-    paddingTop: 20,
+    paddingTop: 15,
   },
   header: {
     flexDirection: 'row',
@@ -226,20 +275,39 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 30,
   },
-  searchContainer: {
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  cartBadgeText: {
+    color: 'white',
+    fontSize: 12,
+  },
+  searchBarContainer: {
     flexDirection: 'row',
-    marginHorizontal: 10,
     alignItems: 'center',
-    marginBottom: 10,
+    backgroundColor: '#fff',
+    borderRadius: 25,
+    marginHorizontal: 15,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    height: 45,
   },
   searchInput: {
     flex: 1,
-    height: 45,
-    borderRadius: 10,
-    backgroundColor: '#FDECEA',
-    paddingHorizontal: 15,
     fontSize: 16,
-    color: '#4A0000',
+    color: '#333',
+    paddingVertical: 0,
   },
   categoryContainer: {
     marginBottom: 10,
@@ -254,40 +322,58 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF5F5',
     borderRadius: 12,
     elevation: 2,
-    width: '48%',
+    width: '46%',
     marginBottom: 15,
     padding: 10,
     shadowColor: '#C62828',
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
+    marginHorizontal: '1%',
   },
   image: {
     height: 100,
     borderRadius: 10,
     resizeMode: 'contain',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   name: {
     fontWeight: '700',
     fontSize: 16,
     color: '#8E1C1C',
+    marginBottom: 2,
   },
   subtitle: {
     fontSize: 13,
     color: '#9E3B3B',
-    marginBottom: 5,
+    marginBottom: 4,
+  },
+  price: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#C62828',
+    marginBottom: 8,
   },
   ratingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 5,
   },
   rating: {
-    fontSize: 14,
+    fontSize: 18,
     color: '#8E1C1C',
+  },
+  iconContainer: {
+    padding: 5,
   },
   heart: {
     fontSize: 18,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 30,
   },
 });

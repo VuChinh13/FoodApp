@@ -1,7 +1,6 @@
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import React, {useState} from 'react';
 import Main from './home_tabs/Main';
-import Search from './home_tabs/Search';
 import Wishlist from './home_tabs/Wishlist';
 import Orders from './home_tabs/Orders';
 import Profile from './home_tabs/Profile';
@@ -12,16 +11,15 @@ const Home = () => {
     <View style={styles.container}>
       {selectedTab == 0 ? (
         <Main />
-      ) : selectedTab == 1 ? (
-        <Search />
-      ) : selectedTab == 2 ? (
+      ) : selectedTab == 1 ? ( 
         <Wishlist />
-      ) : selectedTab == 3 ? (
+      ) : selectedTab == 2 ? ( 
         <Orders />
       ) : (
         <Profile />
       )}
       <View style={styles.bottomTabView}>
+
         <TouchableOpacity
           style={styles.bottomTab}
           onPress={() => {
@@ -36,6 +34,7 @@ const Home = () => {
             style={styles.bottomIcon}
           />
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.bottomTab}
           onPress={() => {
@@ -44,12 +43,13 @@ const Home = () => {
           <Image
             source={
               selectedTab == 1
-                ? require('../../images/search_fill.png')
-                : require('../../images/search.png')
+                ? require('../../images/wish_fill.png')
+                : require('../../images/wish.png')
             }
             style={styles.bottomIcon}
           />
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.bottomTab}
           onPress={() => {
@@ -58,12 +58,13 @@ const Home = () => {
           <Image
             source={
               selectedTab == 2
-                ? require('../../images/wish_fill.png')
-                : require('../../images/wish.png')
+                ? require('../../images/orders_fill.png')
+                : require('../../images/order.png')
             }
             style={styles.bottomIcon}
           />
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.bottomTab}
           onPress={() => {
@@ -72,20 +73,6 @@ const Home = () => {
           <Image
             source={
               selectedTab == 3
-                ? require('../../images/orders_fill.png')
-                : require('../../images/order.png')
-            }
-            style={styles.bottomIcon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bottomTab}
-          onPress={() => {
-            setSelectedTab(4);
-          }}>
-          <Image
-            source={
-              selectedTab == 4
                 ? require('../../images/profile_fill.png')
                 : require('../../images/profile.png')
             }
@@ -98,6 +85,7 @@ const Home = () => {
 };
 
 export default Home;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -107,14 +95,14 @@ const styles = StyleSheet.create({
     height: 60,
     width: '100%',
     backgroundColor: '#fff',
-    justifyContent: 'space-evenly',
+    justifyContent: 'space-evenly', 
     alignItems: 'center',
     elevation: 5,
     position: 'absolute',
     bottom: 0,
   },
   bottomTab: {
-    width: '20%',
+    width: '25%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',

@@ -30,16 +30,16 @@ const Login = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Admin Login</Text>
+      <Text style={styles.title}>Đăng nhập Admin</Text>
       <TextInput
         style={styles.inputStyle}
-        placeholder={'Enter Email Id'}
+        placeholder={'Nhập email'}
         value={email}
         onChangeText={txt => setEmail(txt)}
       />
       <TextInput
         style={styles.inputStyle}
-        placeholder={'Enter Password '}
+        placeholder={'Nhập mật khẩu'}
         value={password}
         onChangeText={txt => setPassword(txt)}
       />
@@ -52,7 +52,7 @@ const Login = ({navigation}) => {
             alert('Please Enter Data');
           }
         }}>
-        <Text style={styles.btnText}>Login</Text>
+        <Text style={styles.btnText}>Đăng nhập</Text>
       </TouchableOpacity>
     </View>
   );

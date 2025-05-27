@@ -84,8 +84,8 @@ const Cart = ({ navigation }) => {
               <Text style={styles.nameText}>{item.name}</Text>
               <Text style={styles.descText}>{item.vendor}</Text>
               <View style={styles.priceView}>
-                <Text style={styles.priceText}>${item.discountPrice}</Text>
-                <Text style={styles.discountText}>${item.price}</Text>
+                <Text style={styles.priceText}>{item.discountPrice}đ</Text>
+                <Text style={styles.discountText}>đ{item.price}</Text>
               </View>
             </View>
             <View style={styles.addRemoveView}>
@@ -108,7 +108,7 @@ const Cart = ({ navigation }) => {
       {cartList.length > 0 && (
         <View style={styles.checkoutView}>
           <Text style={{ color: '#000', fontWeight: '600' }}>
-            Items({cartList.length}){"\n"}Total: ${getTotal()}
+            Món ăn({cartList.length}){"\n"}Tổng tiền: {getTotal()}
           </Text>
           <TouchableOpacity
             style={styles.checkoutBtn}

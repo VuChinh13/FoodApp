@@ -16,7 +16,7 @@ const Checkout = ({ navigation }) => {
   const [cartList, setCartList] = useState([]);
   const isFocused = useIsFocused();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
-  const [selectedAddress, setSelectedAddress] = useState('No Selected Address');
+  const [selectedAddress, setSelectedAddress] = useState('Không có địa chỉ nào được chọn');
   useEffect(() => {
     getCartItems();
     getAddressList();
@@ -144,31 +144,31 @@ const Checkout = ({ navigation }) => {
                   <Text style={styles.descText}>{item.vendor}</Text>
                   <View style={styles.priceView}>
                     <Text style={styles.priceText}>
-                      {'$' + item.discountPrice}
+                      {item.discountPrice + 'đ'}
                     </Text>
                     <Text style={styles.discountText}>
-                      {'$' + item.price}
+                      {item.price + 'đ'}
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.nameText}>{'Qty : ' + item.qty}</Text>
+                <Text style={styles.nameText}>{'Số lượng: ' + item.qty}</Text>
               </View>
             );
           }}
         />
       </View>
       <View style={styles.totalView}>
-        <Text style={styles.nameText}>Total</Text>
-        <Text style={styles.nameText}>{'$' + getTotal()}</Text>
+        <Text style={styles.nameText}>Tổng tiền</Text>
+        <Text style={styles.nameText}>{getTotal() + 'đ'}</Text>
       </View>
       <View style={styles.totalView}>
-        <Text style={styles.nameText}>Selected Address</Text>
+        <Text style={styles.nameText}>Địa chỉ đã chọn</Text>
         <Text
           style={styles.editAddress}
           onPress={() => {
             navigation.navigate('Address');
           }}>
-          Change Address
+          Thay đổi địa chỉ
         </Text>
       </View>
       <Text
@@ -182,21 +182,21 @@ const Checkout = ({ navigation }) => {
         {selectedAddress}
       </Text>
       <TouchableOpacity
-        disabled={selectedAddress == 'No Selected Address' ? true : false}
+        disabled={selectedAddress == 'Không có địa chỉ nào được chọn' ? true : false}
         style={[
           styles.checkoutBtn,
           {
             backgroundColor:
-              selectedAddress == 'No Selected Address' ? '#DADADA' : 'green',
+              selectedAddress == 'Không có địa chỉ nào được chọn' ? '#DADADA' : 'green',
           },
         ]}
         onPress={() => {
-          if (selectedAddress !== 'No Selected Address') {
+          if (selectedAddress !== 'Không có địa chỉ nào được chọn') {
             payNow();
           }
         }}>
         <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
-          Pay Now {'$' + getTotal()}
+          Thanh toán {getTotal() + 'đ'}
         </Text>
       </TouchableOpacity>
     </View>

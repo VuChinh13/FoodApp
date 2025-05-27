@@ -1,4 +1,3 @@
-import { View, Text } from 'react-native';
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -16,6 +15,9 @@ import Address from './screens/user/checkout/Address';
 import AddNewAddress from './screens/user/checkout/AddNewAddress';
 import OrderStatus from './screens/user/checkout/OrderStatus';
 import Detail from './screens/user/home_tabs/Detail';
+import Profile from './screens/user/home_tabs/Profile';
+import EditProfile from './screens/user/EditProfile';
+
 const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
@@ -87,9 +89,20 @@ const AppNavigator = () => {
           options={{ headerShown: false }}
         />
         <Stack.Screen component={Detail} name="Detail" options={{ headerShown: false }} />
+        <Stack.Screen
+          component={Profile}
+          name="Profile"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          component={EditProfile}
+          name="EditProfile"
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
 
 export default AppNavigator;
+

@@ -14,7 +14,7 @@ import Checkout from './screens/user/checkout/Checkout';
 import Address from './screens/user/checkout/Address';
 import AddNewAddress from './screens/user/checkout/AddNewAddress';
 import OrderStatus from './screens/user/checkout/OrderStatus';
-import Detail from './screens/user/home_tabs/Detail';
+import Detail from './screens/user/Detail';
 import Profile from './screens/user/home_tabs/Profile';
 import EditProfile from './screens/user/EditProfile';
 
